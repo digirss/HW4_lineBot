@@ -143,18 +143,23 @@ async function handleEvent(event) {
 
 // LINE webhook endpoint
 app.post('/webhook', line.middleware(config), (req, res) => {
-  // Handle webhook verification
-  if (req.body.events.length === 0) {
-    console.log('Webhook verification request received');
+  console.log('Webhook request received:', req.body);
+  
+  // Handle webhook verification or empty events
+  if (!req.body.events || req.body.events.length === 0) {
+    console.log('Webhook verification request or empty events');
     return res.status(200).json({ message: 'OK' });
   }
   
   Promise
     .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
+    .then((result) => {
+      console.log('Webhook processed successfully');
+      res.status(200).json(result);
+    })
     .catch((err) => {
       console.error('Webhook error:', err);
-      res.status(500).end();
+      res.status(500).json({ error: 'Internal server error' });
     });
 });
 
