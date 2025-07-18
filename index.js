@@ -143,6 +143,12 @@ async function handleEvent(event) {
 
 // LINE webhook endpoint
 app.post('/webhook', line.middleware(config), (req, res) => {
+  // Handle webhook verification
+  if (req.body.events.length === 0) {
+    console.log('Webhook verification request received');
+    return res.status(200).json({ message: 'OK' });
+  }
+  
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.json(result))
