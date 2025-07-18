@@ -9,7 +9,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // LINE Bot configuration
 const config = {
@@ -154,6 +154,6 @@ app.get('/', (req, res) => {
   res.send('LINE Bot Transcription Service is running!');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
