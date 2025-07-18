@@ -9,7 +9,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || process.env.WEB_PORT || 8080;
 
 // LINE Bot configuration
 const config = {
