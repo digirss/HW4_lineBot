@@ -1,0 +1,13 @@
+{
+  "name": "linebot-transcription",
+  "services": [
+    {
+      "name": "linebot-transcription",
+      "buildCommand": "npm install",
+      "startCommand": "npm start",
+      "environment": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
