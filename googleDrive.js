@@ -269,6 +269,46 @@ class GoogleDriveManager {
       return null;
     }
   }
+
+  // 保存歸檔檔案 (.md 格式)
+  async saveArchiveFile(content, fileName, userId) {
+    if (!this.setUserAuth(userId)) {
+      throw new Error('User not authorized');
+    }
+
+    try {
+      const folderId = await this.createFolderStructure(userId);
+      const tempFilePath = path.join(__dirname, 'temp', `${fileName}_${userId}`);
+      
+      // 確保 temp 目錄存在
+      const tempDir = path.dirname(tempFilePath);
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(tempFilePath, content, 'utf8');
+
+      // 創建新的歷史檔案
+      await this.drive.files.create({
+        requestBody: {
+          name: fileName,
+          parents: [folderId]
+        },
+        media: {
+          mimeType: 'text/markdown',
+          body: fs.createReadStream(tempFilePath)
+        }
+      });
+
+      // 清理臨時檔案
+      fs.unlinkSync(tempFilePath);
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving archive file:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = GoogleDriveManager;

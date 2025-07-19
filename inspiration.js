@@ -22,14 +22,86 @@ class InspirationManager {
     return { tags, cleanContent };
   }
 
-  // 生成新的靈感 ID
+  // 生成新的靈感 ID (每日重置)
   generateId(existingInspirations) {
+    if (!existingInspirations || existingInspirations.length === 0) {
+      return '001';
+    }
+    
     const maxId = existingInspirations.reduce((max, item) => {
       const numId = parseInt(item.id);
       return numId > max ? numId : max;
     }, 0);
     
     return String(maxId + 1).padStart(3, '0');
+  }
+
+  // 檢查是否需要歸檔昨天的記錄
+  async checkAndArchiveIfNeeded(userId) {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // "2025-07-19"
+      const inspirations = await this.driveManager.getInspirationsFile(userId);
+      
+      if (inspirations.length === 0) {
+        return; // 沒有記錄，不需要歸檔
+      }
+      
+      // 檢查最新記錄的日期
+      const latestInspiration = inspirations[inspirations.length - 1];
+      const latestDate = latestInspiration.timestamp.split('T')[0];
+      
+      if (latestDate < today) {
+        // 需要歸檔昨天的記錄
+        console.log(`Archiving inspirations from ${latestDate}`);
+        await this.archiveInspirations(userId, inspirations, latestDate);
+      }
+    } catch (error) {
+      console.error('Error checking archive:', error);
+    }
+  }
+
+  // 歸檔昨天的記錄為 Markdown 格式
+  async archiveInspirations(userId, inspirations, date) {
+    try {
+      // 生成 Markdown 內容
+      const markdown = this.generateMarkdown(inspirations, date);
+      
+      // 保存為 .md 檔案
+      const fileName = `inspirations_${date}.md`;
+      await this.driveManager.saveArchiveFile(markdown, fileName, userId);
+      
+      // 清空當前 inspirations.json
+      await this.driveManager.saveInspirationsFile([], userId);
+      
+      console.log(`Archived ${inspirations.length} inspirations to ${fileName}`);
+    } catch (error) {
+      console.error('Error archiving inspirations:', error);
+    }
+  }
+
+  // 生成 Markdown 格式
+  generateMarkdown(inspirations, date) {
+    let markdown = `# 靈感記錄 - ${date}\n\n`;
+    
+    inspirations.forEach(item => {
+      const time = new Date(item.timestamp).toLocaleTimeString('zh-TW', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      const tagsText = item.tags && item.tags.length > 0 
+        ? item.tags.map(tag => `#${tag}`).join(', ')
+        : '無';
+      
+      const imageText = item.image ? '有' : '無';
+      
+      markdown += `## #${item.id} ${item.content}\n`;
+      markdown += `- 標籤: ${tagsText}\n`;
+      markdown += `- 時間: ${time}\n`;
+      markdown += `- 圖片: ${imageText}\n\n`;
+    });
+    
+    return markdown;
   }
 
   // 保存靈感
@@ -44,10 +116,13 @@ class InspirationManager {
         };
       }
 
+      // 檢查是否需要歸檔昨天的記錄
+      await this.checkAndArchiveIfNeeded(userId);
+
       // 解析標籤
       const { tags, cleanContent } = this.parseTags(content);
       
-      // 獲取現有靈感
+      // 獲取現有靈感（歸檔後可能已清空）
       const existingInspirations = await this.driveManager.getInspirationsFile(userId);
       
       // 生成新 ID
