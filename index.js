@@ -147,36 +147,57 @@ async function handleEvent(event) {
       
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '📸 圖片已暫存！\n請使用 /save 指令來保存靈感\n\n例如：/save 設計草圖的想法\n\n🔹 /temp 查看暫存\n🔹 /drop 丟棄暫存'
+        text: '📸 圖片已暫存！\n請使用指令來保存靈感\n\n例如：設計草圖的想法 /s\n\n🔹 /t 查看暫存\n🔹 /dr 丟棄暫存'
       });
 
     } else if (message.type === 'text') {
       const text = message.text.trim();
       
-      // Handle inspiration commands
-      if (text.startsWith('/save')) {
-        await handleSaveCommand(text, userId, replyToken);
-      } else if (text.startsWith('/list')) {
-        await handleListCommand(text, userId, replyToken);
-      } else if (text.startsWith('/edit')) {
-        await handleEditCommand(text, userId, replyToken);
-      } else if (text.startsWith('/delete')) {
-        await handleDeleteCommand(text, userId, replyToken);
-      } else if (text.startsWith('/temp')) {
-        await handleTempCommand(userId, replyToken);
-      } else if (text.startsWith('/drop')) {
-        await handleDropCommand(userId, replyToken);
-      } else if (text.startsWith('/profile')) {
-        await handleProfileCommand(userId, replyToken);
+      // Parse command and content using new logic (command at end)
+      const parseResult = parseTextCommand(text);
+      
+      if (parseResult.command) {
+        // Handle commands
+        switch (parseResult.command) {
+          case '/s':
+            await handleSaveCommand(parseResult.content, parseResult.tags, userId, replyToken);
+            break;
+          case '/l':
+            await handleListCommand(parseResult.params, userId, replyToken);
+            break;
+          case '/e':
+            await handleEditCommand(parseResult.content, parseResult.params, userId, replyToken);
+            break;
+          case '/d':
+            await handleDeleteCommand(parseResult.params, userId, replyToken);
+            break;
+          case '/t':
+            await handleTempCommand(userId, replyToken);
+            break;
+          case '/dr':
+            await handleDropCommand(userId, replyToken);
+            break;
+          case '/p':
+            await handleProfileCommand(userId, replyToken);
+            break;
+          default:
+            await client.replyMessage(replyToken, {
+              type: 'text',
+              text: '❌ 未知指令\n\n輸入「說明」查看完整功能'
+            });
+        }
+      } else if (parseResult.autoSave) {
+        // Auto-save when tags are detected
+        await handleSaveCommand(parseResult.content, parseResult.tags, userId, replyToken);
       } else if (text === '說明' || text === 'help') {
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: '🤖 多功能 LINE Bot\n\n📝 語音轉文字：\n• 傳送音檔自動轉逐字稿\n\n💡 靈感記錄：\n• /save 內容 - 保存靈感\n• /save #標籤 內容 - 帶標籤保存\n• /list - 查看最近靈感\n• /list #標籤 - 查看特定標籤\n• /edit #編號 - 編輯靈感\n• /delete #編號 - 刪除靈感\n• /profile - 個人資料\n\n📸 圖片支援：\n• 先傳圖片，再用 /save 保存\n• /temp - 查看暫存圖片\n• /drop - 丟棄暫存圖片'
+          text: '🤖 多功能 LINE Bot\n\n📝 語音轉文字：\n• 傳送音檔自動轉逐字稿\n\n💡 靈感記錄：\n• 內容 #標籤 /s - 保存靈感\n• 內容 #標籤 - 自動保存（有標籤時）\n• 內容 /s - 保存無標籤靈感\n• /l - 查看最近靈感\n• #標籤 /l - 查看特定標籤\n• 編號 新內容 /e - 編輯靈感\n• 編號 /d - 刪除靈感\n• /p - 個人資料\n\n📸 圖片支援：\n• 先傳圖片，再用指令保存\n• /t - 查看暫存圖片\n• /dr - 丟棄暫存圖片'
         });
       } else {
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: '👋 歡迎使用多功能 Bot！\n\n🎵 傳送音檔：轉換成逐字稿\n💡 /save：記錄靈感\n📋 輸入「說明」查看完整功能'
+          text: '👋 歡迎使用多功能 Bot！\n\n🎵 傳送音檔：轉換成逐字稿\n💡 內容 #標籤：記錄靈感\n📋 輸入「說明」查看完整功能'
         });
       }
     }
@@ -187,6 +208,66 @@ async function handleEvent(event) {
       text: '抱歉，處理過程中發生錯誤，請稍後再試。'
     });
   }
+}
+
+// Parse text command with new logic (command at end)
+function parseTextCommand(text) {
+  const commands = ['/s', '/l', '/e', '/d', '/t', '/dr', '/p'];
+  let command = null;
+  let content = text;
+  let params = '';
+  
+  // Check if text ends with a command
+  for (const cmd of commands) {
+    if (text.endsWith(' ' + cmd)) {
+      command = cmd;
+      content = text.slice(0, -(cmd.length + 1)).trim();
+      break;
+    } else if (text === cmd) {
+      command = cmd;
+      content = '';
+      break;
+    }
+  }
+  
+  // Parse tags from content
+  const tagRegex = /#(\S+)/g;
+  const tags = [];
+  let match;
+  
+  while ((match = tagRegex.exec(content)) !== null) {
+    tags.push(match[1]);
+  }
+  
+  // Remove tags from content
+  const cleanContent = content.replace(tagRegex, '').trim();
+  
+  // For list command, check if content has tags (used as filter)
+  if (command === '/l' && tags.length > 0) {
+    params = tags[0]; // Use first tag as filter
+  }
+  
+  // For edit/delete commands, extract ID from beginning
+  if (command === '/e' || command === '/d') {
+    const parts = cleanContent.split(' ');
+    if (parts.length > 0 && /^\d+$/.test(parts[0])) {
+      params = parts[0].padStart(3, '0'); // Convert to 001 format
+      if (command === '/e') {
+        content = parts.slice(1).join(' '); // Rest is new content for edit
+      }
+    }
+  }
+  
+  // Determine if auto-save (has tags but no command)
+  const autoSave = !command && tags.length > 0;
+  
+  return {
+    command,
+    content: cleanContent,
+    tags,
+    params,
+    autoSave
+  };
 }
 
 // Download image file from LINE
@@ -217,15 +298,13 @@ async function downloadImageFile(messageId) {
   }
 }
 
-// Handle /save command
-async function handleSaveCommand(text, userId, replyToken) {
+// Handle save command (new format)
+async function handleSaveCommand(content, tags, userId, replyToken) {
   try {
-    const content = text.replace('/save', '').trim();
-    
     if (!content) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 請輸入要保存的靈感內容\n\n例如：/save 今天想到的好點子'
+        text: '❌ 請輸入要保存的靈感內容\n\n例如：今天想到的好點子 /s'
       });
       return;
     }
@@ -252,7 +331,9 @@ async function handleSaveCommand(text, userId, replyToken) {
       }
     }
 
-    const result = await inspirationManager.saveInspiration(content, userId, imageInfo);
+    // Combine content with tags for inspiration manager
+    const fullContent = tags.length > 0 ? `${content} ${tags.map(tag => `#${tag}`).join(' ')}` : content;
+    const result = await inspirationManager.saveInspiration(fullContent, userId, imageInfo);
 
     if (result.needsAuth) {
       await client.replyMessage(replyToken, {
@@ -283,14 +364,13 @@ async function handleSaveCommand(text, userId, replyToken) {
   }
 }
 
-// Handle /list command
-async function handleListCommand(text, userId, replyToken) {
+// Handle list command (new format)
+async function handleListCommand(params, userId, replyToken) {
   try {
-    const params = text.replace('/list', '').trim();
     let tag = null;
     
-    if (params.startsWith('#')) {
-      tag = params.substring(1);
+    if (params) {
+      tag = params; // params already contains the tag name without #
     }
 
     const result = await inspirationManager.listInspirations(userId, tag, 10);
@@ -338,21 +418,19 @@ async function handleListCommand(text, userId, replyToken) {
   }
 }
 
-// Handle /edit command
-async function handleEditCommand(text, userId, replyToken) {
+// Handle edit command (new format)
+async function handleEditCommand(content, params, userId, replyToken) {
   try {
-    const match = text.match(/^\/edit\s+#?(\d+)\s+(.+)$/);
-    
-    if (!match) {
+    if (!params || !content) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 格式錯誤\n\n正確格式：/edit #編號 新內容\n例如：/edit #001 修改後的想法'
+        text: '❌ 格式錯誤\n\n正確格式：編號 新內容 /e\n例如：001 修改後的想法 /e'
       });
       return;
     }
 
-    const id = match[1].padStart(3, '0');
-    const newContent = match[2];
+    const id = params; // Already formatted as 001
+    const newContent = content;
 
     const result = await inspirationManager.editInspiration(id, newContent, userId);
 
@@ -384,20 +462,18 @@ async function handleEditCommand(text, userId, replyToken) {
   }
 }
 
-// Handle /delete command
-async function handleDeleteCommand(text, userId, replyToken) {
+// Handle delete command (new format)
+async function handleDeleteCommand(params, userId, replyToken) {
   try {
-    const match = text.match(/^\/delete\s+#?(\d+)$/);
-    
-    if (!match) {
+    if (!params) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 格式錯誤\n\n正確格式：/delete #編號\n例如：/delete #001'
+        text: '❌ 格式錯誤\n\n正確格式：編號 /d\n例如：001 /d'
       });
       return;
     }
 
-    const id = match[1].padStart(3, '0');
+    const id = params; // Already formatted as 001
 
     const result = await inspirationManager.deleteInspiration(id, userId);
 
