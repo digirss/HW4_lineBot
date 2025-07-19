@@ -23,7 +23,7 @@
 LINE_CHANNEL_ACCESS_TOKEN=your_line_channel_access_token
 LINE_CHANNEL_SECRET=your_line_channel_secret
 OPENAI_API_KEY=your_openai_api_key
-PORT=3000
+PORT=8080
 ```
 
 ## 本地開發
