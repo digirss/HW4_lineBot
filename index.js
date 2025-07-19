@@ -92,14 +92,19 @@ function cleanupFile(filePath) {
 
 // Handle LINE webhook events
 async function handleEvent(event) {
+  console.log('Handling event:', JSON.stringify(event));
+  
   if (event.type !== 'message') {
+    console.log('Not a message event, skipping');
     return Promise.resolve(null);
   }
 
   const { message, replyToken } = event;
+  console.log('Message type:', message.type);
 
   try {
     if (message.type === 'audio') {
+      console.log('Audio message received, processing...');
       // Send processing message
       await client.replyMessage(replyToken, {
         type: 'text',
