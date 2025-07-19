@@ -541,9 +541,53 @@ app.post('/webhook', (req, res, next) => {
     });
 });
 
+// OAuth callback endpoint
+app.get('/oauth/callback', async (req, res) => {
+  try {
+    const code = req.query.code;
+    const state = req.query.state; // This is the userId
+    
+    if (!code || !state) {
+      return res.status(400).send('Missing authorization code or state');
+    }
+
+    // Handle OAuth callback
+    const success = await inspirationManager.handleOAuthCallback(code, state);
+    
+    if (success) {
+      res.send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h2>✅ 授權成功！</h2>
+            <p>Google Drive 已成功連結</p>
+            <p>請回到 LINE Bot 繼續使用靈感記錄功能</p>
+            <script>
+              setTimeout(() => {
+                window.close();
+              }, 3000);
+            </script>
+          </body>
+        </html>
+      `);
+    } else {
+      res.status(400).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h2>❌ 授權失敗</h2>
+            <p>請重新嘗試授權流程</p>
+          </body>
+        </html>
+      `);
+    }
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
 // Health check endpoint
 app.get('/', (req, res) => {
-  res.send('LINE Bot Transcription Service is running!');
+  res.send('LINE Bot Transcription and Inspiration Service is running!');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
