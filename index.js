@@ -360,10 +360,7 @@ async function handleSaveCommand(content, tags, userId, replyToken) {
     }
   } catch (error) {
     console.error('Save command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 保存過程中發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -401,9 +398,13 @@ async function handleListCommand(params, userId, replyToken) {
           message += `#${item.id} ${item.content}${tagsText} ${imageIcon}\n📅 ${timeText}\n\n`;
         });
 
+        // 限制訊息長度，避免 LINE 400 錯誤
+        const finalMessage = message.trim();
+        const truncatedMessage = finalMessage.length > 2000 ? finalMessage.substring(0, 1950) + '\n\n...(內容過長已截斷)' : finalMessage;
+
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: message.trim()
+          text: truncatedMessage
         });
       }
     } else {
@@ -414,10 +415,7 @@ async function handleListCommand(params, userId, replyToken) {
     }
   } catch (error) {
     console.error('List command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 查詢過程中發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -458,10 +456,7 @@ async function handleEditCommand(content, params, userId, replyToken) {
     }
   } catch (error) {
     console.error('Edit command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 編輯過程中發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -498,10 +493,7 @@ async function handleDeleteCommand(params, userId, replyToken) {
     }
   } catch (error) {
     console.error('Delete command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 刪除過程中發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -524,10 +516,7 @@ async function handleTempCommand(userId, replyToken) {
     }
   } catch (error) {
     console.error('Temp command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 查詢暫存時發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -553,10 +542,7 @@ async function handleDropCommand(userId, replyToken) {
     }
   } catch (error) {
     console.error('Drop command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 丟棄暫存時發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 
@@ -587,10 +573,7 @@ async function handleProfileCommand(userId, replyToken) {
     }
   } catch (error) {
     console.error('Profile command error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '❌ 查詢個人資料時發生錯誤'
-    });
+    // 避免 400 錯誤，不在此處回覆
   }
 }
 

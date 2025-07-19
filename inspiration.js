@@ -106,10 +106,10 @@ class InspirationManager {
   }
 
   // 保存靈感
-  async saveInspiration(content, userId, imageInfo = null) {
+  async saveInspiration(content, userId, imageInfo = null, skipAuthCheck = false) {
     try {
-      // 檢查用戶是否已授權
-      if (!this.driveManager.isUserAuthorized(userId)) {
+      // 檢查用戶是否已授權（除非跳過檢查）
+      if (!skipAuthCheck && !this.driveManager.isUserAuthorized(userId)) {
         // 暫存用戶輸入
         const { tags, cleanContent } = this.parseTags(content);
         this.setTempInput(userId, cleanContent, tags, imageInfo);
@@ -454,7 +454,7 @@ class InspirationManager {
             ? `${tempInput.content} ${tempInput.tags.map(tag => `#${tag}`).join(' ')}` 
             : tempInput.content;
           
-          const result = await this.saveInspiration(fullContent, userId, tempInput.imageInfo);
+          const result = await this.saveInspiration(fullContent, userId, tempInput.imageInfo, true);
           
           // 清除暫存
           this.clearTempInput(userId);
