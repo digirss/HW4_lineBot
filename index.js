@@ -203,10 +203,8 @@ async function handleEvent(event) {
     }
   } catch (error) {
     console.error('Event handling error:', error);
-    await client.replyMessage(replyToken, {
-      type: 'text',
-      text: '抱歉，處理過程中發生錯誤，請稍後再試。'
-    });
+    // 暫時停用錯誤回覆，專注解決根本問題
+    console.error('Skipping error reply to avoid 400 errors');
   }
 }
 
