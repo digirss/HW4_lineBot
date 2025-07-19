@@ -4,6 +4,7 @@ class InspirationManager {
   constructor() {
     this.driveManager = new GoogleDriveManager();
     this.tempImages = new Map(); // 暫存用戶上傳的圖片
+    this.tempInputs = new Map(); // 暫存用戶 OAuth 期間的輸入
   }
 
   // 解析標籤
@@ -109,6 +110,10 @@ class InspirationManager {
     try {
       // 檢查用戶是否已授權
       if (!this.driveManager.isUserAuthorized(userId)) {
+        // 暫存用戶輸入
+        const { tags, cleanContent } = this.parseTags(content);
+        this.setTempInput(userId, cleanContent, tags, imageInfo);
+        
         return {
           success: false,
           needsAuth: true,
@@ -410,9 +415,60 @@ class InspirationManager {
     this.tempImages.delete(userId);
   }
 
+  // 暫存用戶輸入 (OAuth 期間)
+  setTempInput(userId, content, tags, imageInfo = null) {
+    this.tempInputs.set(userId, {
+      content: content,
+      tags: tags,
+      imageInfo: imageInfo,
+      timestamp: Date.now()
+    });
+    
+    // 15分鐘後自動清除
+    setTimeout(() => {
+      this.tempInputs.delete(userId);
+    }, 15 * 60 * 1000);
+  }
+
+  // 獲取暫存輸入
+  getTempInput(userId) {
+    return this.tempInputs.get(userId);
+  }
+
+  // 清除暫存輸入
+  clearTempInput(userId) {
+    this.tempInputs.delete(userId);
+  }
+
   // 處理 OAuth 回調
   async handleOAuthCallback(code, userId) {
-    return await this.driveManager.handleOAuthCallback(code, userId);
+    const success = await this.driveManager.handleOAuthCallback(code, userId);
+    
+    if (success) {
+      // 檢查是否有暫存的輸入
+      const tempInput = this.getTempInput(userId);
+      if (tempInput) {
+        try {
+          // 自動保存暫存的輸入
+          const fullContent = tempInput.tags.length > 0 
+            ? `${tempInput.content} ${tempInput.tags.map(tag => `#${tag}`).join(' ')}` 
+            : tempInput.content;
+          
+          const result = await this.saveInspiration(fullContent, userId, tempInput.imageInfo);
+          
+          // 清除暫存
+          this.clearTempInput(userId);
+          
+          return { success: true, autoSaved: result.success };
+        } catch (error) {
+          console.error('Auto-save after OAuth failed:', error);
+          // 清除暫存即使保存失敗
+          this.clearTempInput(userId);
+        }
+      }
+    }
+    
+    return { success: success, autoSaved: false };
   }
 
   // 格式化時間顯示

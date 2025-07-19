@@ -338,7 +338,7 @@ async function handleSaveCommand(content, tags, userId, replyToken) {
     if (result.needsAuth) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '🔑 首次使用需要授權 Google Drive\n\n請點擊以下連結完成授權：\n' + result.authUrl
+        text: '🔑 首次使用需要授權 Google Drive\n\n📝 您的輸入已暫存，授權完成後會自動保存\n\n請點擊以下連結完成授權：\n' + result.authUrl
       });
     } else if (result.success) {
       const inspiration = result.inspiration;
@@ -631,14 +631,27 @@ app.get('/oauth/callback', async (req, res) => {
     }
 
     // Handle OAuth callback
-    const success = await inspirationManager.handleOAuthCallback(code, state);
+    const result = await inspirationManager.handleOAuthCallback(code, state);
     
-    if (success) {
+    if (result.success) {
+      // Send notification to user about auto-save
+      if (result.autoSaved) {
+        try {
+          await client.pushMessage(state, {
+            type: 'text',
+            text: '🎉 授權成功！您之前輸入的靈感已自動保存✅\n\n現在可以正常使用靈感記錄功能了！'
+          });
+        } catch (error) {
+          console.error('Failed to send auto-save notification:', error);
+        }
+      }
+      
       res.send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h2>✅ 授權成功！</h2>
             <p>Google Drive 已成功連結</p>
+            ${result.autoSaved ? '<p><strong>您之前的輸入已自動保存！</strong></p>' : ''}
             <p>請回到 LINE Bot 繼續使用靈感記錄功能</p>
             <script>
               setTimeout(() => {
