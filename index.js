@@ -148,8 +148,8 @@ async function handleEvent(event) {
   }
 }
 
-// LINE webhook endpoint (temporarily skip middleware for testing)
-app.post('/webhook', express.json(), (req, res) => {
+// LINE webhook endpoint
+app.post('/webhook', line.middleware(config), (req, res) => {
   console.log('Webhook request received:', req.body);
   
   // Handle webhook verification or empty events
