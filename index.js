@@ -192,7 +192,7 @@ async function handleEvent(event) {
       } else if (text === '說明' || text === 'help') {
         await client.replyMessage(replyToken, {
           type: 'text',
-          text: '🤖 多功能 LINE Bot\n\n📝 語音轉文字：\n• 傳送音檔自動轉逐字稿\n\n💡 靈感記錄：\n• 內容 #標籤 /s - 保存靈感\n• 內容 #標籤 - 自動保存（有標籤時）\n• 內容 /s - 保存無標籤靈感\n• /l - 查看最近靈感\n• #標籤 /l - 查看特定標籤\n• 編號 新內容 /e - 編輯靈感\n• 編號 /d - 刪除靈感\n• /p - 個人資料\n\n📸 圖片支援：\n• 先傳圖片，再用指令保存\n• /t - 查看暫存圖片\n• /dr - 丟棄暫存圖片'
+          text: '🤖 多功能 LINE Bot\n\n📝 語音轉文字：\n• 傳送音檔自動轉逐字稿\n\n💡 靈感記錄：\n• 內容 #標籤 - 自動保存（有標籤時）\n• 內容 /s - 保存無標籤靈感\n• /l - 查看最近靈感\n• #標籤 /l - 查看特定標籤\n• #編號 新內容 /e - 編輯靈感\n• #編號 /d - 刪除靈感\n• /p - 個人資料\n\n📸 圖片支援：\n• 先傳圖片，再用指令保存\n• /t - 查看暫存圖片\n• /dr - 丟棄暫存圖片'
         });
       } else {
         await client.replyMessage(replyToken, {
@@ -247,13 +247,15 @@ function parseTextCommand(text) {
     params = tags[0]; // Use first tag as filter
   }
   
-  // For edit/delete commands, extract ID from beginning
+  // For edit/delete commands, extract ID from beginning (format: #001)
   if (command === '/e' || command === '/d') {
-    const parts = cleanContent.split(' ');
-    if (parts.length > 0 && /^\d+$/.test(parts[0])) {
-      params = parts[0].padStart(3, '0'); // Convert to 001 format
+    const parts = content.split(' ');
+    if (parts.length > 0 && /^#\d+$/.test(parts[0])) {
+      params = parts[0].substring(1).padStart(3, '0'); // Remove # and convert to 001 format
       if (command === '/e') {
         content = parts.slice(1).join(' '); // Rest is new content for edit
+      } else {
+        content = ''; // For delete, no content needed
       }
     }
   }
@@ -424,7 +426,7 @@ async function handleEditCommand(content, params, userId, replyToken) {
     if (!params || !content) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 格式錯誤\n\n正確格式：編號 新內容 /e\n例如：001 修改後的想法 /e'
+        text: '❌ 格式錯誤\n\n正確格式：#編號 新內容 /e\n例如：#001 修改後的想法 /e'
       });
       return;
     }
@@ -468,7 +470,7 @@ async function handleDeleteCommand(params, userId, replyToken) {
     if (!params) {
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 格式錯誤\n\n正確格式：編號 /d\n例如：001 /d'
+        text: '❌ 格式錯誤\n\n正確格式：#編號 /d\n例如：#001 /d'
       });
       return;
     }
