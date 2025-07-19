@@ -152,8 +152,12 @@ async function handleEvent(event) {
   }
 }
 
-// LINE webhook endpoint
-app.post('/webhook', line.middleware(config), (req, res) => {
+// Add custom middleware to debug signature validation
+app.post('/webhook', (req, res, next) => {
+  console.log('Request headers:', req.headers);
+  console.log('Raw body type:', typeof req.body);
+  next();
+}, line.middleware(config), (req, res) => {
   console.log('Webhook request received:', req.body);
   
   // Handle webhook verification or empty events
