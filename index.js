@@ -17,6 +17,10 @@ const config = {
   channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
 
+// Debug: Check environment variables
+console.log('Channel Access Token length:', config.channelAccessToken ? config.channelAccessToken.length : 'undefined');
+console.log('Channel Secret length:', config.channelSecret ? config.channelSecret.length : 'undefined');
+
 const client = new line.Client(config);
 
 // Ensure temp directory exists
