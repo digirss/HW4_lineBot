@@ -246,7 +246,13 @@ class GoogleDriveManager {
         alt: 'media'
       });
 
-      return JSON.parse(response.data);
+      // 檢查 response.data 類型，避免重複解析 JSON
+      if (typeof response.data === 'string') {
+        return JSON.parse(response.data);
+      } else {
+        // 已經是 object，直接返回
+        return response.data;
+      }
     } catch (error) {
       console.error('Error getting inspirations file:', error);
       return [];
