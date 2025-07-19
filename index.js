@@ -7,8 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Don't parse JSON globally - let LINE middleware handle it
 const PORT = process.env.PORT || process.env.WEB_PORT || 8080;
 
 // LINE Bot configuration
