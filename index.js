@@ -347,9 +347,12 @@ async function handleSaveCommand(content, tags, userId, replyToken) {
       const tagsText = inspiration.tags.length > 0 ? inspiration.tags.map(tag => `#${tag}`).join(' ') : '無';
       const imageText = inspiration.image ? '\n🖼️ 包含圖片' : '';
       
+      // 確保內容不會太長，限制在 2000 字元內
+      const content = inspiration.content.length > 50 ? inspiration.content.substring(0, 50) + '...' : inspiration.content;
+      
       await client.replyMessage(replyToken, {
         type: 'text',
-        text: `✅ 靈感已保存！\n📝 內容：${inspiration.content}\n🏷️ 標籤：${tagsText}\n🔢 編號：#${inspiration.id}${imageText}`
+        text: `✅ 靈感已保存！\n📝 內容：${content}\n🏷️ 標籤：${tagsText}\n🔢 編號：#${inspiration.id}${imageText}`
       });
     } else {
       await client.replyMessage(replyToken, {
