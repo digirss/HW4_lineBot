@@ -124,9 +124,12 @@ class InspirationManager {
       
       // 獲取現有靈感（歸檔後可能已清空）
       const existingInspirations = await this.driveManager.getInspirationsFile(userId);
+      console.log(`Current inspirations count: ${existingInspirations.length}`);
+      console.log(`Existing inspirations:`, existingInspirations.map(item => ({ id: item.id, content: item.content })));
       
       // 生成新 ID
       const newId = this.generateId(existingInspirations);
+      console.log(`Generated new ID: ${newId}`);
       
       // 創建新靈感記錄
       const newInspiration = {
@@ -139,9 +142,11 @@ class InspirationManager {
       
       // 添加到現有記錄
       existingInspirations.push(newInspiration);
+      console.log(`Total inspirations after push: ${existingInspirations.length}`);
       
       // 保存到 Google Drive
       await this.driveManager.saveInspirationsFile(existingInspirations, userId);
+      console.log(`Saved to Google Drive successfully`);
       
       return {
         success: true,
