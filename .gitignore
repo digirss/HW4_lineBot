@@ -3,4 +3,5 @@ node_modules/
 temp/
 *.log
 .DS_Store
-LINE Bot 音檔轉逐字稿開發過程完整記錄.md
+LineBot voice to word bot built up.md
+linebotinspiration_built_up.md
